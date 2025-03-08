@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import einops
-from evit import GroupNorm8
+from .evit import GroupNorm8
 from timm.models.efficientvit_mit import GELUTanh
 
 class FactorizedConvND(nn.Module):

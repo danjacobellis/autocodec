@@ -3,14 +3,18 @@ import torch.nn as nn
 import einops
 import numpy as np
 from PIL import Image
-from evit import EfficientVitLargeStageND, GroupNorm8
 from timm.models.efficientvit_mit import GELUTanh
-from monarch import FactorizedConvND, FactorizedResBlockGNND
-from tft.utils import compand, decompand
 from torchvision.transforms.v2.functional import pil_to_tensor, to_pil_image
 from torch.distributions.laplace import Laplace
 from einops import rearrange
 from einops.layers.torch import Rearrange
+from .evit import EfficientVitLargeStageND, GroupNorm8
+from .monarch import FactorizedConvND, FactorizedResBlockGNND
+
+def compand(x, eps=0.1, power=0.4):
+    return x.sign() * ((x.abs()+eps)**power - eps**power)
+def decompand(y, eps=0.1, power=0.4):
+    return y.sign() * ((y.abs()+eps**power)**(1/power) - eps)
 
 class LaplaceCompand(nn.Module):
     def __init__(self, num_channels):
@@ -58,7 +62,7 @@ def get_inverse_pattern(dim, p):
     kwargs = {f'p{i}': p for i in range(1, dim + 1)}
     return pattern, kwargs
 
-class AutoEncoderND(nn.Module):
+class AutoCodecND(nn.Module):
     def __init__(self, dim, input_channels, J, latent_dim, lightweight_encode=True, lightweight_decode=False, post_filter=False):
         super().__init__()
         assert dim in (1, 2, 3), "Dimension should be 1, 2 or 3."
