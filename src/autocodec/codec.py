@@ -101,14 +101,18 @@ class AutoCodecND(nn.Module):
                 norm_layer=GroupNorm8
             )
         if post_filter:
-            kernel_size = post_filter
-            self.post_filter = torch.nn.Conv2d(
-                input_channels,
-                input_channels,
-                kernel_size=kernel_size,
-                stride=1,
-                padding=(kernel_size-1)//2,
-                padding_mode='reflect'
+            self.post_filter = torch.nn.Sequential(
+                conv_layer(input_channels, 16*input_channels, kernel_size=3, padding=1, padding_mode='reflect'),
+                GroupNorm8(16*input_channels),
+                EfficientVitLargeStageND(
+                    dim = dim,
+                    in_chs = 16*input_channels,
+                    depth = 1,
+                    norm_layer=GroupNorm8,
+                    act_layer=GELUTanh,
+                    head_dim=8,    
+                ),
+                conv_layer(16*input_channels, input_channels, kernel_size=3, padding=1, padding_mode='reflect'),
             )
 
     def encode(self, x):
