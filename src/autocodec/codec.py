@@ -40,28 +40,6 @@ class QuantizeLF8(nn.Module):
             x += torch.rand_like(x) - 0.5
         return x
 
-def get_forward_pattern(dim, p):
-    spatial_dims = [f'(N{i} p{i})' for i in range(1, dim + 1)]
-    spatial_dims_str = ' '.join(spatial_dims)
-    ps = [f'p{i}' for i in range(1, dim + 1)]
-    ps_str = ' '.join(ps)
-    Nis = [f'N{i}' for i in range(1, dim + 1)]
-    Nis_str = ' '.join(Nis)
-    pattern = f'b c {spatial_dims_str} -> b (c {ps_str}) {Nis_str}'
-    kwargs = {f'p{i}': p for i in range(1, dim + 1)}
-    return pattern, kwargs
-
-def get_inverse_pattern(dim, p):
-    ps = [f'p{i}' for i in range(1, dim + 1)]
-    ps_str = ' '.join(ps)
-    Nis = [f'N{i}' for i in range(1, dim + 1)]
-    Nis_str = ' '.join(Nis)
-    spatial_dims = [f'(N{i} p{i})' for i in range(1, dim + 1)]
-    spatial_dims_str = ' '.join(spatial_dims)
-    pattern = f'b (c {ps_str}) {Nis_str} -> b c {spatial_dims_str}'
-    kwargs = {f'p{i}': p for i in range(1, dim + 1)}
-    return pattern, kwargs
-
 class AutoCodecND(nn.Module):
     def __init__(self, dim, input_channels, J, latent_dim, lightweight_encode=True, lightweight_decode=False, post_filter=False):
         super().__init__()
@@ -123,24 +101,14 @@ class AutoCodecND(nn.Module):
                 norm_layer=GroupNorm8
             )
         if post_filter:
-            p = post_filter  # patch size
-            pf_input_dim = input_channels * (p ** self.dim)
-            pf_hidden_dim = (1 + input_channels) * (p ** self.dim)
-            forward_pattern, forward_kwargs = get_forward_pattern(self.dim, p)
-            inverse_pattern, inverse_kwargs = get_inverse_pattern(self.dim, p)
-            self.post_filter = nn.Sequential(
-                Rearrange(forward_pattern, **forward_kwargs),
-                conv_layer(pf_input_dim, pf_hidden_dim, kernel_size=1, bias=False),
-                GroupNorm8(pf_hidden_dim),
-                EfficientVitLargeStageND(
-                    dim=self.dim,
-                    in_chs=pf_hidden_dim,
-                    depth=6,
-                    norm_layer=GroupNorm8,
-                    act_layer=GELUTanh
-                ),
-                conv_layer(pf_hidden_dim, pf_input_dim, kernel_size=1, bias=False),
-                Rearrange(inverse_pattern, **inverse_kwargs),
+            kernel_size = post_filter
+            self.post_filter = torch.nn.Conv2d(
+                input_channels,
+                input_channels,
+                kernel_size=kernel_size,
+                stride=1,
+                padding=(kernel_size-1)//2,
+                padding_mode='reflect'
             )
 
     def encode(self, x):
