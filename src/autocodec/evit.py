@@ -80,9 +80,9 @@ class LiteMLAND(nn.Module):
         return self.proj(out)
 
 class EfficientVitBlockND(nn.Module):
-    def __init__(self, dim, in_channels, norm_layer=None, act_layer=nn.GELU):
+    def __init__(self, dim, in_channels, norm_layer=None, act_layer=nn.GELU, head_dim=32):
         super().__init__()
-        self.context_module = ResidualBlockND(LiteMLAND(dim, in_channels, norm_layer=norm_layer))
+        self.context_module = ResidualBlockND(LiteMLAND(dim, in_channels, norm_layer=norm_layer, head_dim=head_dim))
         self.local_module = ResidualBlockND(MBConvND(dim, in_channels, norm_layer=norm_layer, act_layer=act_layer))
 
     def forward(self, x):
@@ -91,10 +91,10 @@ class EfficientVitBlockND(nn.Module):
         return x
 
 class EfficientVitLargeStageND(nn.Module):
-    def __init__(self, dim, in_chs, depth, norm_layer=None, act_layer=nn.GELU):
+    def __init__(self, dim, in_chs, depth, norm_layer=None, act_layer=nn.GELU, head_dim=32):
         super().__init__()
         self.blocks = nn.Sequential(*[
-            EfficientVitBlockND(dim, in_chs, norm_layer=norm_layer, act_layer=act_layer)
+            EfficientVitBlockND(dim, in_chs, norm_layer=norm_layer, act_layer=act_layer, head_dim=32)
             for _ in range(depth)
         ])
 
