@@ -41,7 +41,17 @@ class QuantizeLF8(nn.Module):
         return x
 
 class AutoCodecND(nn.Module):
-    def __init__(self, dim, input_channels, J, latent_dim, lightweight_encode=True, lightweight_decode=False, post_filter=False):
+    def __init__(
+        self,
+        dim=2,
+        input_channels=3,
+        J=4,
+        latent_dim=12,
+        encoder_depth=6,
+        decoder_depth=6,
+        lightweight_encode=True,
+        lightweight_decode=False,
+    ):
         super().__init__()
         assert dim in (1, 2, 3), "Dimension should be 1, 2 or 3."
         self.hidden_dim = input_channels * (2 ** (dim * J))
@@ -75,13 +85,13 @@ class AutoCodecND(nn.Module):
 
         if lightweight_encode:
             self.encoder_blocks = nn.Sequential(
-                *[FactorizedResBlockGNND(dim, self.hidden_dim) for _ in range(6)]
+                *[FactorizedResBlockGNND(dim, self.hidden_dim) for _ in range(encoder_depth)]
             )
         else:
             self.encoder_blocks = EfficientVitLargeStageND(
                 dim=dim,
                 in_chs=self.hidden_dim,
-                depth=6,
+                depth=encoder_depth,
                 norm_layer=GroupNorm8
             )
 
@@ -91,28 +101,14 @@ class AutoCodecND(nn.Module):
 
         if lightweight_decode:
             self.decoder_blocks = nn.Sequential(
-                *[FactorizedResBlockGNND(dim, self.hidden_dim) for _ in range(6)]
+                *[FactorizedResBlockGNND(dim, self.hidden_dim) for _ in range(decoder_depth)]
             )
         else:
             self.decoder_blocks = EfficientVitLargeStageND(
                 dim=dim,
                 in_chs=self.hidden_dim,
-                depth=6,
+                depth=decoder_depth,
                 norm_layer=GroupNorm8
-            )
-        if post_filter:
-            self.post_filter = torch.nn.Sequential(
-                conv_layer(input_channels, 16*input_channels, kernel_size=3, padding=1, padding_mode='reflect'),
-                GroupNorm8(16*input_channels),
-                EfficientVitLargeStageND(
-                    dim = dim,
-                    in_chs = 16*input_channels,
-                    depth = 1,
-                    norm_layer=GroupNorm8,
-                    act_layer=GELUTanh,
-                    head_dim=8,    
-                ),
-                conv_layer(16*input_channels, input_channels, kernel_size=3, padding=1, padding_mode='reflect'),
             )
 
     def encode(self, x):
