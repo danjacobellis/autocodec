@@ -61,12 +61,12 @@ class FactorizedSqueezeExciteND(nn.Module):
         return x * s
 
 class FactorizedResBlockGNND(nn.Module):
-    def __init__(self, dim, channels, se_ratio=0.25):
+    def __init__(self, dim, channels, se_ratio=0.25, kernel_size=3):
         super().__init__()
-        self.conv1 = FactorizedConvND(dim, channels, channels, kernel_size=3)
+        self.conv1 = FactorizedConvND(dim, channels, channels, kernel_size=kernel_size)
         self.gn1 = GroupNorm8(channels)
         self.act1 = GELUTanh()
-        self.conv2 = FactorizedConvND(dim, channels, channels, kernel_size=3)
+        self.conv2 = FactorizedConvND(dim, channels, channels, kernel_size=kernel_size)
         self.gn2 = GroupNorm8(channels)
         self.se = FactorizedSqueezeExciteND(dim, channels, se_ratio=se_ratio)
 
