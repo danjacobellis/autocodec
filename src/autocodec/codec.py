@@ -48,6 +48,7 @@ class AutoCodecND(nn.Module):
         J=4,
         latent_dim=12,
         encoder_depth=6,
+        encoder_kernel_size=3,
         decoder_depth=6,
         lightweight_encode=True,
         lightweight_decode=False,
