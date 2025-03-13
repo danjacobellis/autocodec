@@ -50,6 +50,7 @@ class AutoCodecND(nn.Module):
         encoder_depth=6,
         encoder_kernel_size=3,
         decoder_depth=6,
+        decoder_kernel_size=3,
         lightweight_encode=True,
         lightweight_decode=False,
     ):
@@ -86,7 +87,7 @@ class AutoCodecND(nn.Module):
 
         if lightweight_encode:
             self.encoder_blocks = nn.Sequential(
-                *[FactorizedResBlockGNND(dim, self.hidden_dim) for _ in range(encoder_depth)]
+                *[FactorizedResBlockGNND(dim, self.hidden_dim, kernel_size=encoder_kernel_size) for _ in range(encoder_depth)]
             )
         else:
             self.encoder_blocks = EfficientVitLargeStageND(
@@ -96,13 +97,13 @@ class AutoCodecND(nn.Module):
                 norm_layer=GroupNorm8
             )
 
-        self.conv_down = FactorizedConvND(dim, self.hidden_dim, latent_dim, bias=False)
+        self.conv_down = FactorizedConvND(dim, self.hidden_dim, latent_dim, kernel_size=1, bias=False)
         self.quantize = QuantizeLF8(latent_dim)
         self.conv_up = FactorizedConvND(dim, latent_dim, self.hidden_dim, kernel_size=1, bias=False)
 
         if lightweight_decode:
             self.decoder_blocks = nn.Sequential(
-                *[FactorizedResBlockGNND(dim, self.hidden_dim) for _ in range(decoder_depth)]
+                *[FactorizedResBlockGNND(dim, self.hidden_dim, kernel_size=decoder_kernel_size) for _ in range(decoder_depth)]
             )
         else:
             self.decoder_blocks = EfficientVitLargeStageND(
