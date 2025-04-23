@@ -94,7 +94,8 @@ class AutoCodecND(nn.Module):
                 dim=dim,
                 in_chs=self.hidden_dim,
                 depth=encoder_depth,
-                norm_layer=GroupNorm8
+                norm_layer=GroupNorm8,
+                act_layer=GELUTanh
             )
 
         self.conv_down = FactorizedConvND(dim, self.hidden_dim, latent_dim, kernel_size=1, bias=False)
@@ -110,7 +111,8 @@ class AutoCodecND(nn.Module):
                 dim=dim,
                 in_chs=self.hidden_dim,
                 depth=decoder_depth,
-                norm_layer=GroupNorm8
+                norm_layer=GroupNorm8,
+                act_layer=GELUTanh
             )
 
     def encode(self, x):
