@@ -31,9 +31,9 @@ class MBConvND(nn.Module):
     def __init__(self, dim, in_channels, expand_ratio=6, norm_layer=None, act_layer=nn.GELU):
         super().__init__()
         mid_channels = in_channels * expand_ratio
-        self.inverted_conv = ConvNormActND(dim, in_channels, mid_channels, 1, norm_layer=None, act_layer=act_layer, bias=True)
-        self.depth_conv = ConvNormActND(dim, mid_channels, mid_channels, 3, groups=mid_channels, norm_layer=None, act_layer=act_layer, bias=True)
-        self.point_conv = ConvNormActND(dim, mid_channels, in_channels, 1, norm_layer=norm_layer, act_layer=None, bias=False)
+        self.inverted_conv = ConvNormActND(dim, in_channels, mid_channels, 1, norm_layer=norm_layer, act_layer=act_layer, bias=True)
+        self.depth_conv = ConvNormActND(dim, mid_channels, mid_channels, 3, groups=mid_channels, norm_layer=norm_layer, act_layer=act_layer, bias=True)
+        self.point_conv = ConvNormActND(dim, mid_channels, in_channels, 1, norm_layer=norm_layer, act_layer=norm_layer, bias=False)
 
     def forward(self, x):
         x = self.inverted_conv(x)
